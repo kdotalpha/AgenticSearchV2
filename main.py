@@ -53,7 +53,13 @@ async def query(request: Request):
 
             interpretation = interpret_query(user_query)
 
-            yield _sse_event("progress", {"step": "interpreted", "percent": 25, "message": "Query interpreted, fetching data..."})
+            yield _sse_event("progress", {
+                "step": "interpreted",
+                "percent": 25,
+                "message": "Query interpreted, fetching data...",
+                "time_range": interpretation.get("time_range", {}),
+                "filters": interpretation.get("filters", []),
+            })
 
             reports_needed = interpretation.get("reports_needed", [])
             time_range = interpretation.get("time_range", {})
@@ -89,6 +95,7 @@ async def query(request: Request):
 
                 yield _sse_event("chart", {
                     "config": config,
+                    "chart_type": chart_spec.get("chart_type", ""),
                     "title": chart_spec.get("title", "Chart"),
                     "description": chart_spec.get("description", ""),
                 })

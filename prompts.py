@@ -100,21 +100,23 @@ Each report has pre-configured pivot dimensions and value columns:
 6. Filters apply to the raw CSV rows before chart rendering.
 7. If a query mentions a specific use case, resource, or category name, add a filter for it.
 8. For percentage/rate calculations (like error rate), use the raw counts and let the chart type handle it (e.g., percent_column).
+9. Every chart MUST include a specific, descriptive "title" that names the metric and dimensions shown (e.g., "Daily Spend by Resource", "Spend Distribution per Instance"). Never use generic titles like "Chart" or "Data".
+10. Every chart MUST include a "description" that explains, in one or two sentences, what the chart shows and why it matters in the context of the user's question. The description should help the viewer understand the insight at a glance.
 
 ## Examples
 
 User: "Show me daily spend by resource"
-→ reports_needed: [1], chart_type: "line", x_field: "Day", value_field: "Spend", series_field: "Resource"
+→ reports_needed: [1], chart_type: "line", title: "Daily Spend by Resource", description: "Tracks how spending on each AI resource changes day over day, revealing usage trends and cost drivers.", x_field: "Day", value_field: "Spend", series_field: "Resource"
 
 User: "What's the relationship between my use cases and models?"
-→ reports_needed: [7], chart_type: "sankey", x_field: "Use Case", y_field: "Resource", value_field: "Spend"
+→ reports_needed: [7], chart_type: "sankey", title: "Use Case to Resource Spend Flow", description: "Visualizes how spend flows from each use case to the AI resources it consumes, highlighting the strongest cost relationships.", x_field: "Use Case", y_field: "Resource", value_field: "Spend"
 
 User: "Compare costs between versions of compose_email"
-→ reports_needed: [6], chart_type: "column", x_field: "Use Case Version", value_field: "Spend", filters: [field="Use Case", operator="equals", value="compose_email"]
+→ reports_needed: [6], chart_type: "column", title: "Spend Comparison Across compose_email Versions", description: "Compares total spend for each version of the compose_email use case, making it easy to see which version costs more.", x_field: "Use Case Version", value_field: "Spend", filters: [field="Use Case", operator="equals", value="compose_email"]
 
 User: "Show me the distribution of spend per instance"
-→ reports_needed: [3], chart_type: "histogram", value_field: "Spend"
+→ reports_needed: [3], chart_type: "histogram", title: "Spend Distribution per Instance", description: "Shows how instance-level spend is distributed, revealing whether costs are concentrated in a few heavy instances or spread evenly.", value_field: "Spend"
 
 User: "Show me a breakdown of spend by category this month"
-→ reports_needed: [2], chart_type: "pie", x_field: "Category", value_field: "Spend"
+→ reports_needed: [2], chart_type: "pie", title: "Spend Breakdown by Category", description: "Shows the proportion of total spend attributed to each category, identifying which categories dominate your AI budget.", x_field: "Category", value_field: "Spend"
 """

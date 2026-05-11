@@ -1,235 +1,557 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pay-i Analytics</title>
-    <script src="https://code.highcharts.com/highcharts.js"></script>
-    <script src="https://code.highcharts.com/highcharts-more.js"></script>
-    <script src="https://code.highcharts.com/modules/sankey.js"></script>
-    <script src="https://code.highcharts.com/modules/dependency-wheel.js"></script>
-    <script src="https://code.highcharts.com/modules/streamgraph.js"></script>
-    <script src="https://code.highcharts.com/modules/treemap.js"></script>
-    <script src="https://code.highcharts.com/modules/sunburst.js"></script>
-    <script src="https://code.highcharts.com/modules/heatmap.js"></script>
-    <script src="https://code.highcharts.com/modules/histogram-bellcurve.js"></script>
-    <script src="https://code.highcharts.com/modules/funnel.js"></script>
-    <script src="https://code.highcharts.com/modules/wordcloud.js"></script>
-    <script src="https://code.highcharts.com/modules/pareto.js"></script>
-    <script src="https://code.highcharts.com/modules/dumbbell.js"></script>
-    <script src="https://code.highcharts.com/modules/lollipop.js"></script>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
-            color: #333;
-            padding: 20px;
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #1a1a2e;
-        }
-        #query-section {
-            max-width: 800px;
-            margin: 0 auto 20px;
-            display: flex;
-            gap: 10px;
-        }
-        #query-input {
-            flex: 1;
-            padding: 12px 16px;
-            font-size: 16px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        #query-input:focus { border-color: #4a90d9; }
-        #submit-btn {
-            padding: 12px 24px;
-            font-size: 16px;
-            background: #4a90d9;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        #submit-btn:hover { background: #357abd; }
-        #submit-btn:disabled { background: #999; cursor: not-allowed; }
-        #progress-section {
-            max-width: 800px;
-            margin: 0 auto 20px;
-            display: none;
-        }
-        #progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #ddd;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        #progress-fill {
-            height: 100%;
-            background: #4a90d9;
-            border-radius: 4px;
-            transition: width 0.3s ease;
-            width: 0%;
-        }
-        #progress-text {
-            margin-top: 8px;
-            font-size: 14px;
-            color: #666;
-        }
-        #error-section {
-            max-width: 800px;
-            margin: 0 auto 20px;
-            padding: 12px 16px;
-            background: #fee;
-            border: 1px solid #fcc;
-            border-radius: 8px;
-            color: #c00;
-            display: none;
-        }
-        #charts-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .chart-wrapper {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .chart-div {
-            width: 100%;
-            min-height: 400px;
-        }
-    </style>
+<meta charset="utf-8"/>
+<title>Pay-i Analytics</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/highcharts-more.js"></script>
+<script src="https://code.highcharts.com/modules/sankey.js"></script>
+<script src="https://code.highcharts.com/modules/dependency-wheel.js"></script>
+<script src="https://code.highcharts.com/modules/streamgraph.js"></script>
+<script src="https://code.highcharts.com/modules/treemap.js"></script>
+<script src="https://code.highcharts.com/modules/sunburst.js"></script>
+<script src="https://code.highcharts.com/modules/heatmap.js"></script>
+<script src="https://code.highcharts.com/modules/histogram-bellcurve.js"></script>
+<script src="https://code.highcharts.com/modules/funnel.js"></script>
+<script src="https://code.highcharts.com/modules/wordcloud.js"></script>
+<script src="https://code.highcharts.com/modules/pareto.js"></script>
+<script src="https://code.highcharts.com/modules/dumbbell.js"></script>
+<script src="https://code.highcharts.com/modules/lollipop.js"></script>
+<style>
+  :root {
+    --payi-mint:           #4ED1AF;
+    --payi-mint-100:       #DFF6DC;
+    --payi-mint-200:       #B0F4C3;
+    --payi-mint-300:       #75E5BD;
+    --payi-mint-400:       #4ED1AF;
+    --payi-mint-500:       #33B2A3;
+    --payi-mint-600:       #209890;
+    --payi-orange:         #FF7E45;
+    --payi-orange-300:     #FF7E45;
+    --payi-orange-500:     #CE3028;
+    --payi-navy:           #1C2835;
+    --payi-off-white:      #F9F9F9;
+    --payi-neutral-100:    #EBEBED;
+    --payi-neutral-200:    #D9D9DD;
+    --payi-neutral-300:    #C0C1C9;
+    --payi-neutral-400:    #9EA3AF;
+    --payi-neutral-500:    #747C8C;
+    --payi-neutral-600:    #535F70;
+    --payi-font-sans:      'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --payi-font-mono:      'JetBrains Mono', ui-monospace, monospace;
+    --payi-shadow-sm:      0 1px 2px rgba(28,40,53,0.06);
+    --payi-shadow-md:      0 4px 16px rgba(28,40,53,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--payi-off-white);
+    font-family: var(--payi-font-sans);
+    color: var(--payi-navy);
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app { min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ===== Top bar ===== */
+  .topbar {
+    background: var(--payi-navy);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid #000;
+  }
+
+  .search-wrap { width: 100%; max-width: 720px; }
+  .search-form { position: relative; display: flex; align-items: center; }
+  .search-icon {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    color: var(--payi-navy); width: 18px; height: 18px; pointer-events: none;
+  }
+  #query-input {
+    width: 100%;
+    background: #fff; color: var(--payi-navy);
+    border: 1px solid var(--payi-neutral-200);
+    border-radius: 999px;
+    padding: 11px 50px 11px 44px;
+    font-size: 14px; font-weight: 300;
+    font-family: var(--payi-font-sans);
+    outline: none;
+    transition: border-color 150ms, box-shadow 150ms;
+  }
+  #query-input:focus {
+    border-color: var(--payi-mint);
+    box-shadow: 0 0 0 4px rgba(78,209,175,0.18);
+  }
+  #query-input::placeholder { color: var(--payi-neutral-400); }
+  .search-kbd {
+    position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+    font-family: var(--payi-font-mono); font-size: 11px;
+    color: var(--payi-neutral-500);
+    border: 1px solid var(--payi-neutral-200);
+    padding: 1px 6px; border-radius: 4px;
+    pointer-events: none;
+  }
+
+  /* ===== Controls bar ===== */
+  .controls {
+    background: #fff;
+    border-bottom: 1px solid var(--payi-neutral-100);
+    padding: 14px 32px;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .controls.visible { display: flex; }
+  .ctrl {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 12px;
+    border: 1px solid var(--payi-neutral-100);
+    background: #fff;
+    border-radius: 8px;
+    font-size: 13px; color: var(--payi-navy);
+    font-family: var(--payi-font-sans);
+  }
+  .ctrl--date { font-weight: 500; }
+  .ctrl--date svg { flex-shrink: 0; }
+  .ctrl--filter {
+    border: 1px solid var(--payi-mint);
+    box-shadow: 0 0 0 3px rgba(78,209,175,0.18);
+    gap: 6px;
+  }
+  .filter-field { font-weight: 500; }
+  .filter-op {
+    font-family: var(--payi-font-mono); color: var(--payi-neutral-400);
+    font-size: 12px;
+  }
+  .filter-value {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--payi-mint); color: var(--payi-navy);
+    padding: 2px 8px; border-radius: 999px;
+    font-size: 12px; font-weight: 500;
+  }
+
+  /* ===== Progress ===== */
+  .progress-section {
+    max-width: 1480px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 16px 32px 0;
+    display: none;
+  }
+  .progress-section.visible { display: block; }
+  .progress-bar {
+    width: 100%; height: 4px;
+    background: var(--payi-neutral-100);
+    border-radius: 2px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; width: 0%;
+    background: var(--payi-mint);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+  .progress-text {
+    margin-top: 8px;
+    font-size: 13px; color: var(--payi-neutral-500);
+  }
+
+  /* ===== Error ===== */
+  .error-section {
+    max-width: 1480px; width: 100%;
+    margin: 0 auto; padding: 0 32px;
+    display: none;
+  }
+  .error-section.visible { display: block; }
+  .error-box {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: 8px;
+    color: var(--payi-orange-500);
+    font-size: 14px;
+  }
+
+  /* ===== Canvas grid ===== */
+  .canvas {
+    padding: 18px 32px 64px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 1480px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  @media (max-width: 960px) { .canvas { grid-template-columns: 1fr; } }
+
+  /* ===== Chart card ===== */
+  .chart-card {
+    background: #fff;
+    border: 1px solid var(--payi-neutral-100);
+    border-radius: 16px;
+    box-shadow: var(--payi-shadow-sm);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    transition: box-shadow 180ms, border-color 180ms;
+  }
+  .chart-card:hover {
+    box-shadow: var(--payi-shadow-md);
+    border-color: var(--payi-neutral-200);
+  }
+  .chart-card--accent { border-top: 3px solid var(--payi-mint); }
+
+  .chart-card__head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px;
+    padding: 18px 20px 8px;
+  }
+  .chart-card__head-l { min-width: 0; }
+  .chart-card__eye {
+    font-size: 10.5px; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--payi-mint-600);
+    margin-bottom: 4px;
+  }
+  .chart-card__title {
+    font-weight: 400; font-size: 17px; letter-spacing: -0.01em;
+    color: var(--payi-navy); margin: 0; line-height: 1.3;
+  }
+  .chart-card__why {
+    font-size: 13px; font-weight: 300; line-height: 1.45;
+    color: var(--payi-neutral-500); margin: 6px 0 0; max-width: 56ch;
+  }
+
+  .chart-card__actions { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+  .icon-btn {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: transparent; border: none; cursor: pointer;
+    color: var(--payi-neutral-500);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:hover { background: var(--payi-off-white); color: var(--payi-navy); }
+
+  .chart-card__body {
+    padding: 4px 16px 12px;
+    aspect-ratio: 1 / 1;
+    position: relative;
+    min-height: 0;
+  }
+  .chart-canvas {
+    position: absolute;
+    inset: 4px 16px 12px;
+    width: auto; height: auto;
+  }
+
+  .chart-card__foot {
+    border-top: 1px solid var(--payi-neutral-100);
+    background: var(--payi-off-white);
+    padding: 10px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    font-size: 11.5px; color: var(--payi-neutral-500);
+    font-family: var(--payi-font-mono);
+  }
+
+  .highcharts-container, .highcharts-root { font-family: var(--payi-font-sans) !important; }
+</style>
 </head>
 <body>
-    <h1>Pay-i Analytics</h1>
 
-    <div id="query-section">
-        <input type="text" id="query-input" placeholder="Ask about your data... (e.g., 'Show me daily spend by resource')" />
-        <button id="submit-btn">Ask</button>
+<div class="app">
+
+  <header class="topbar">
+    <div class="search-wrap">
+      <div class="search-form">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="text" id="query-input" placeholder="What can I help you analyze?" autocomplete="off"/>
+        <span class="search-kbd">&#x23CE;</span>
+      </div>
     </div>
+  </header>
 
-    <div id="progress-section">
-        <div id="progress-bar"><div id="progress-fill"></div></div>
-        <div id="progress-text"></div>
-    </div>
+  <section class="controls" id="controls-bar" aria-label="Filters"></section>
 
-    <div id="error-section"></div>
+  <div class="progress-section" id="progress-section">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="progress-text" id="progress-text"></div>
+  </div>
 
-    <div id="charts-container"></div>
+  <div class="error-section" id="error-section">
+    <div class="error-box" id="error-box"></div>
+  </div>
 
-    <script>
-        const queryInput = document.getElementById('query-input');
-        const submitBtn = document.getElementById('submit-btn');
-        const progressSection = document.getElementById('progress-section');
-        const progressFill = document.getElementById('progress-fill');
-        const progressText = document.getElementById('progress-text');
-        const errorSection = document.getElementById('error-section');
-        const chartsContainer = document.getElementById('charts-container');
+  <main class="canvas" id="charts-container"></main>
 
-        let chartCounter = 0;
+</div>
 
-        queryInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !submitBtn.disabled) submitQuery();
-        });
-        submitBtn.addEventListener('click', submitQuery);
+<script>
+/* ===== Pay-i Highcharts theme ===== */
+Highcharts.setOptions({
+  colors: ['#33B2A3', '#75E5BD', '#4790AF', '#447691', '#6A4F79', '#EFCA70', '#FF9966', '#FA5C5C'],
+  chart: {
+    backgroundColor: 'transparent',
+    style: { fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
+    spacing: [8, 4, 8, 4]
+  },
+  title: { text: null },
+  subtitle: { text: null },
+  credits: { enabled: false },
+  exporting: { enabled: false },
+  xAxis: {
+    lineColor: '#EBEBED',
+    tickColor: '#EBEBED',
+    tickLength: 4,
+    labels: { style: { color: '#747C8C', fontSize: '11px', fontFamily: '"JetBrains Mono", ui-monospace, monospace' } }
+  },
+  yAxis: {
+    gridLineColor: '#EBEBED',
+    gridLineWidth: 1,
+    title: { text: null },
+    labels: { style: { color: '#747C8C', fontSize: '11px', fontFamily: '"JetBrains Mono", ui-monospace, monospace' } }
+  },
+  legend: {
+    align: 'center',
+    verticalAlign: 'bottom',
+    layout: 'horizontal',
+    margin: 16,
+    padding: 8,
+    itemStyle: { color: '#535F70', fontSize: '12px', fontWeight: '400', fontFamily: 'Inter' },
+    itemHoverStyle: { color: '#1C2835' },
+    symbolHeight: 10, symbolWidth: 10, symbolRadius: 3,
+    itemDistance: 24
+  },
+  tooltip: {
+    backgroundColor: '#1C2835',
+    borderColor: '#1C2835',
+    borderRadius: 8,
+    borderWidth: 0,
+    style: { color: '#fff', fontSize: '12px', fontFamily: 'Inter' },
+    shadow: { color: 'rgba(28,40,53,0.18)', offsetX: 0, offsetY: 4, opacity: 1, width: 10 },
+    useHTML: true,
+    padding: 10
+  },
+  plotOptions: {
+    series: {
+      animation: { duration: 700 },
+      marker: { enabled: false, lineWidth: 0, states: { hover: { enabled: true, radius: 4, lineWidth: 2, lineColor: '#fff' } } }
+    },
+    column: { borderWidth: 0, borderRadius: 3, pointPadding: 0.08, groupPadding: 0.1 },
+    bar: { borderWidth: 0, borderRadius: 4 },
+    line: { lineWidth: 2.5 },
+    spline: { lineWidth: 2.5 },
+    areaspline: { fillOpacity: 0.2, lineWidth: 2.5 }
+  }
+});
 
-        async function submitQuery() {
-            const query = queryInput.value.trim();
-            if (!query) return;
+/* ===== DOM refs ===== */
+const queryInput = document.getElementById('query-input');
+const controlsBar = document.getElementById('controls-bar');
+const progressSection = document.getElementById('progress-section');
+const progressFill = document.getElementById('progress-fill');
+const progressText = document.getElementById('progress-text');
+const errorSection = document.getElementById('error-section');
+const errorBox = document.getElementById('error-box');
+const chartsContainer = document.getElementById('charts-container');
 
-            submitBtn.disabled = true;
-            chartsContainer.innerHTML = '';
-            errorSection.style.display = 'none';
-            progressSection.style.display = 'block';
-            progressFill.style.width = '0%';
-            progressText.textContent = 'Starting...';
-            chartCounter = 0;
+let chartCounter = 0;
 
-            try {
-                const response = await fetch('/api/query', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({query}),
-                });
+queryInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') submitQuery();
+});
 
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let buffer = '';
+async function submitQuery() {
+  const query = queryInput.value.trim();
+  if (!query) return;
 
-                while (true) {
-                    const {done, value} = await reader.read();
-                    if (done) break;
+  chartsContainer.innerHTML = '';
+  controlsBar.innerHTML = '';
+  controlsBar.classList.remove('visible');
+  errorSection.classList.remove('visible');
+  progressSection.classList.add('visible');
+  progressFill.style.width = '0%';
+  progressText.textContent = 'Interpreting your query…';
+  chartCounter = 0;
 
-                    buffer += decoder.decode(value, {stream: true});
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
+  try {
+    const response = await fetch('/api/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
 
-                    let eventType = '';
-                    for (const line of lines) {
-                        if (line.startsWith('event: ')) {
-                            eventType = line.slice(7);
-                        } else if (line.startsWith('data: ')) {
-                            const data = JSON.parse(line.slice(6));
-                            handleEvent(eventType, data);
-                        }
-                    }
-                }
-            } catch (err) {
-                showError(err.message);
-            } finally {
-                submitBtn.disabled = false;
-            }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      let eventType = '';
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          eventType = line.slice(7);
+        } else if (line.startsWith('data: ')) {
+          const data = JSON.parse(line.slice(6));
+          handleEvent(eventType, data);
         }
+      }
+    }
+  } catch (err) {
+    showError(err.message);
+  }
+}
 
-        function handleEvent(event, data) {
-            switch (event) {
-                case 'progress':
-                    progressFill.style.width = data.percent + '%';
-                    progressText.textContent = data.message || data.step;
-                    break;
-                case 'chart':
-                    renderChart(data);
-                    break;
-                case 'complete':
-                    progressText.textContent = `Done! ${data.count} chart(s) rendered.`;
-                    setTimeout(() => { progressSection.style.display = 'none'; }, 2000);
-                    break;
-                case 'error':
-                    showError(data.message);
-                    break;
-            }
-        }
+function handleEvent(event, data) {
+  switch (event) {
+    case 'progress':
+      progressFill.style.width = data.percent + '%';
+      progressText.textContent = data.message || data.step;
+      if (data.step === 'interpreted') {
+        populateControls(data.time_range, data.filters);
+      }
+      if (data.step === 'complete') {
+        setTimeout(() => { progressSection.classList.remove('visible'); }, 1500);
+      }
+      break;
+    case 'chart':
+      renderChart(data);
+      break;
+    case 'complete':
+      progressFill.style.width = '100%';
+      progressText.textContent = `Done — ${data.count} chart(s) rendered.`;
+      setTimeout(() => { progressSection.classList.remove('visible'); }, 1500);
+      break;
+    case 'error':
+      showError(data.message);
+      break;
+  }
+}
 
-        function renderChart(data) {
-            chartCounter++;
-            const wrapper = document.createElement('div');
-            wrapper.className = 'chart-wrapper';
-            const chartDiv = document.createElement('div');
-            chartDiv.className = 'chart-div';
-            chartDiv.id = 'chart-' + chartCounter;
-            wrapper.appendChild(chartDiv);
-            chartsContainer.appendChild(wrapper);
+function populateControls(timeRange, filters) {
+  controlsBar.innerHTML = '';
 
-            const config = data.config;
-            delete config._modules;
-            Highcharts.chart(chartDiv.id, config);
-        }
+  if (timeRange && timeRange.from_date && timeRange.to_date) {
+    const dateChip = document.createElement('div');
+    dateChip.className = 'ctrl ctrl--date';
+    dateChip.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>${formatDate(timeRange.from_date)} – ${formatDate(timeRange.to_date)}`;
+    controlsBar.appendChild(dateChip);
+  }
 
-        function showError(message) {
-            errorSection.textContent = 'Error: ' + message;
-            errorSection.style.display = 'block';
-            progressSection.style.display = 'none';
-        }
-    </script>
+  if (filters && filters.length > 0) {
+    for (const f of filters) {
+      const chip = document.createElement('div');
+      chip.className = 'ctrl ctrl--filter';
+      const opLabel = formatOperator(f.operator);
+      const valStr = Array.isArray(f.value) ? f.value.join(', ') : String(f.value);
+      chip.innerHTML = `<span class="filter-field">${f.field}</span><span class="filter-op">${opLabel}</span><span class="filter-value">${valStr}</span>`;
+      controlsBar.appendChild(chip);
+    }
+  }
+
+  controlsBar.classList.add('visible');
+}
+
+function formatDate(isoStr) {
+  const d = new Date(isoStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+
+function formatOperator(op) {
+  const map = { equals: '=', not_equals: '≠', contains: '≈', in: 'in', not_in: '∉', gt: '>', lt: '<', gte: '≥', lte: '≤' };
+  return map[op] || op;
+}
+
+function formatChartType(type) {
+  if (!type) return '';
+  return type.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
+}
+
+function renderChart(data) {
+  chartCounter++;
+  const isFirst = chartCounter === 1;
+
+  const card = document.createElement('article');
+  card.className = 'chart-card' + (isFirst ? ' chart-card--accent' : '');
+
+  // Header
+  const head = document.createElement('div');
+  head.className = 'chart-card__head';
+
+  const headL = document.createElement('div');
+  headL.className = 'chart-card__head-l';
+
+  if (data.chart_type) {
+    const eye = document.createElement('div');
+    eye.className = 'chart-card__eye';
+    eye.textContent = formatChartType(data.chart_type);
+    headL.appendChild(eye);
+  }
+
+  if (data.title && data.title !== 'Chart') {
+    const title = document.createElement('h3');
+    title.className = 'chart-card__title';
+    title.textContent = data.title;
+    headL.appendChild(title);
+  }
+
+  if (data.description) {
+    const why = document.createElement('p');
+    why.className = 'chart-card__why';
+    why.textContent = data.description;
+    headL.appendChild(why);
+  }
+
+  head.appendChild(headL);
+
+  // Action buttons
+  const actions = document.createElement('div');
+  actions.className = 'chart-card__actions';
+  actions.innerHTML = `<button class="icon-btn" title="Expand"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button><button class="icon-btn" title="More"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>`;
+  head.appendChild(actions);
+
+  card.appendChild(head);
+
+  // Chart body
+  const body = document.createElement('div');
+  body.className = 'chart-card__body';
+  const chartDiv = document.createElement('div');
+  chartDiv.className = 'chart-canvas';
+  chartDiv.id = 'chart-' + chartCounter;
+  body.appendChild(chartDiv);
+  card.appendChild(body);
+
+  // Footer
+  const foot = document.createElement('div');
+  foot.className = 'chart-card__foot';
+  foot.innerHTML = `<span>Chart ${chartCounter}</span>`;
+  card.appendChild(foot);
+
+  chartsContainer.appendChild(card);
+
+  // Render Highcharts
+  const config = data.config;
+  delete config._modules;
+  config.title = { text: null };
+  config.subtitle = { text: null };
+  Highcharts.chart(chartDiv.id, config);
+}
+
+function showError(message) {
+  errorBox.textContent = 'Error: ' + message;
+  errorSection.classList.add('visible');
+  progressSection.classList.remove('visible');
+}
+</script>
+
 </body>
 </html>

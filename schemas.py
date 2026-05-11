@@ -38,8 +38,14 @@ INTERPRETATION_SCHEMA = {
                             "error_bar", "combo_line_column"
                         ]
                     },
-                    "title": {"type": "string"},
-                    "description": {"type": "string"},
+                    "title": {
+                        "type": "string",
+                        "description": "A concise, specific chart title naming the metric and dimensions shown (e.g., 'Daily Spend by Resource'). Never use generic titles like 'Chart' or 'Data'."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "One or two sentences explaining what this chart reveals in the context of the user's question. Describe the insight or comparison the viewer should take away."
+                    },
                     "report_id": {"type": "integer", "minimum": 1, "maximum": 8},
                     "x_field": {"type": "string"},
                     "y_field": {"type": "string"},
@@ -50,7 +56,7 @@ INTERPRETATION_SCHEMA = {
                         "enum": ["sum", "avg", "min", "max", "count", "none"]
                     }
                 },
-                "required": ["chart_type", "title", "report_id", "value_field"]
+                "required": ["chart_type", "title", "description", "report_id", "value_field"]
             }
         },
         "filters": {

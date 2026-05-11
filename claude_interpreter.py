@@ -32,7 +32,7 @@ def _resolve_claude_cmd():
     if not CLAUDE_PATH:
         return None
 
-    if sys.platform != "win32" or not CLAUDE_PATH.lower().endswith(".cmd"):
+    if sys.platform != "win32" or not CLAUDE_PATH.lower().endswith((".cmd", ".ps1")):
         return [CLAUDE_PATH]
 
     cmd_dir = os.path.dirname(CLAUDE_PATH)
@@ -55,6 +55,8 @@ def _resolve_claude_cmd():
             if entry:
                 entry_path = os.path.normpath(os.path.join(pkg_dir, entry))
                 if os.path.exists(entry_path):
+                    if entry_path.lower().endswith(".exe"):
+                        return [entry_path]
                     node = shutil.which("node")
                     if node:
                         return [node, entry_path]
