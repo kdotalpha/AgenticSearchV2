@@ -17,12 +17,30 @@ class PayiClient:
     def fetch_report(self, report_id: str, from_date: str, to_date: str) -> list[dict]:
         resp = self.session.get(
             f"{self.base_url}/api/v1/reports/{report_id}",
-            params={"from": from_date, "to": to_date},
+            params={"from": "2020-01-01", "to": "2030-01-01"},
         )
+        if resp.status_code == 400:
+            resp = self.session.get(
+                f"{self.base_url}/api/v1/reports/{report_id}",
+                params={"from": from_date, "to": to_date},
+            )
         resp.raise_for_status()
         text = resp.text.lstrip("﻿")
         reader = csv.DictReader(io.StringIO(text))
-        return list(reader)
+        rows = list(reader)
+
+        # Filter rows by date range if a Day/Month column exists
+        for date_col in ("Day", "Month"):
+            if rows and date_col in rows[0]:
+                filtered = []
+                for row in rows:
+                    date_val = row[date_col][:10] if row.get(date_col) else ""
+                    if from_date <= date_val <= to_date:
+                        filtered.append(row)
+                if filtered:
+                    return filtered
+                return rows
+        return rows
 
     def fetch_multiple(self, report_ids: list[str], from_date: str, to_date: str) -> dict[str, list[dict]]:
         results = {}

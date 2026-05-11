@@ -10,7 +10,22 @@ from prompts import build_system_prompt
 from schemas import INTERPRETATION_SCHEMA
 
 
-CLAUDE_PATH = shutil.which("claude")
+def _find_claude():
+    found = shutil.which("claude")
+    if found:
+        return found
+    candidates = [
+        "/opt/homebrew/bin/claude",
+        "/usr/local/bin/claude",
+        os.path.expanduser("~/.npm-global/bin/claude"),
+    ]
+    for c in candidates:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    return None
+
+
+CLAUDE_PATH = _find_claude()
 
 
 def _resolve_claude_cmd():

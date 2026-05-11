@@ -14,52 +14,46 @@ specifying which reports to fetch, what time range to use, what charts to render
 and what filters to apply.
 
 Today's date is {today.isoformat()}.
-If the user does not specify a time range, default to the last {DEFAULT_TIME_RANGE_DAYS} days
-(from {default_from.isoformat()} to {today.isoformat()}).
+If the user does not specify a time range, default to the last 90 days
+(from {(today - timedelta(days=90)).isoformat()} to {today.isoformat()}).
+The available data spans from approximately 2026-01-21 to 2026-04-10.
+Use a range that captures the available data when the user says "recent" or "last week" etc.
 
 ## Available Reports
 
 Each report has pre-configured pivot dimensions and value columns:
 
 ### Report 1: Daily Time Series by Resource
-- Pivots: "@ Day", "Resource"
-- Values: "Spend", "Units", "Requests", "Instances"
+- CSV columns: "Day", "Resource", "Spend", "Units", "Requests", "Instances"
 - Best for: Time-series trends by AI model, daily comparisons
 
 ### Report 2: Monthly by Category and Use Case
-- Pivots: "@ Month", "Category", "Use Case"
-- Values: "Spend", "Instances", "Requests", "Units"
+- CSV columns: "Month", "Category", "Use Case", "Spend", "Instances", "Requests", "Units"
 - Best for: Hierarchical views (Category→Use Case), monthly trends, flow diagrams
 
 ### Report 3: Instance-Level Detail
-- Pivots: "Use Case", "Instance ID", "Resource"
-- Values: "Spend", "Request: Latency"
+- CSV columns: "Use Case", "Instance ID", "Resource", "Spend", "Request: Latency"
 - Best for: Statistical distributions, scatter plots, per-instance analysis
 - NOTE: This report has many rows (one per instance). Use for box plots, histograms, scatter.
 
 ### Report 4: Hourly Pattern by Category
-- Pivots: "@ Hour", "Category"
-- Values: "Spend", "Requests", "Units"
+- CSV columns: "Hour", "Category", "Spend", "Requests", "Units"
 - Best for: Intra-day patterns, polar/radar charts, hour-of-day analysis
 
 ### Report 5: Response Code Analysis
-- Pivots: "Response Code", "Resource"
-- Values: "Requests", "Spend"
+- CSV columns: "Response Code", "Resource", "Requests", "Spend"
 - Best for: Error rate analysis, success/failure breakdowns, quality monitoring
 
 ### Report 6: Use Case Version Comparison
-- Pivots: "Use Case", "Use Case Version"
-- Values: "Spend", "Units", "Instances", "Requests"
+- CSV columns: "Use Case", "Use Case Version", "Spend", "Units", "Instances", "Requests"
 - Best for: Comparing costs/volume across versions of the same use case
 
 ### Report 7: Daily by Use Case and Resource
-- Pivots: "@ Day", "Use Case", "Resource"
-- Values: "Spend", "Requests", "Instances", "Request: Latency"
+- CSV columns: "Day", "Use Case", "Resource", "Spend", "Requests", "Instances", "Request: Latency"
 - Best for: Use case ↔ resource relationships, daily use case trends, Sankey/flow diagrams, Pareto analysis
 
 ### Report 8: Daily by Resource and Response Code
-- Pivots: "@ Day", "Resource", "Response Code"
-- Values: "Spend", "Requests", "Request: Latency"
+- CSV columns: "Day", "Resource", "Response Code", "Spend", "Requests", "Request: Latency"
 - Best for: Error trends over time, latency by response type, bubble charts
 
 ## Available Chart Types
@@ -110,14 +104,17 @@ Each report has pre-configured pivot dimensions and value columns:
 ## Examples
 
 User: "Show me daily spend by resource"
-→ Report 1, chart_type: "line", x_field: "@ Day", value_field: "Spend", series_field: "Resource"
+→ reports_needed: [1], chart_type: "line", x_field: "Day", value_field: "Spend", series_field: "Resource"
 
 User: "What's the relationship between my use cases and models?"
-→ Report 7, chart_type: "sankey", x_field: "Use Case", y_field: "Resource", value_field: "Spend"
+→ reports_needed: [7], chart_type: "sankey", x_field: "Use Case", y_field: "Resource", value_field: "Spend"
 
 User: "Compare costs between versions of compose_email"
-→ Report 6, chart_type: "grouped_column" → "column", x_field: "Use Case Version", value_field: "Spend", filter: Use Case equals "compose_email"
+→ reports_needed: [6], chart_type: "column", x_field: "Use Case Version", value_field: "Spend", filters: [field="Use Case", operator="equals", value="compose_email"]
 
 User: "Show me the distribution of spend per instance"
-→ Report 3, chart_type: "histogram", value_field: "Spend"
+→ reports_needed: [3], chart_type: "histogram", value_field: "Spend"
+
+User: "Show me a breakdown of spend by category this month"
+→ reports_needed: [2], chart_type: "pie", x_field: "Category", value_field: "Spend"
 """
