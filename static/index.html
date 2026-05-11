@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pay-i Analytics</title>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/highcharts-more.js"></script>
+    <script src="https://code.highcharts.com/modules/sankey.js"></script>
+    <script src="https://code.highcharts.com/modules/dependency-wheel.js"></script>
+    <script src="https://code.highcharts.com/modules/streamgraph.js"></script>
+    <script src="https://code.highcharts.com/modules/treemap.js"></script>
+    <script src="https://code.highcharts.com/modules/sunburst.js"></script>
+    <script src="https://code.highcharts.com/modules/heatmap.js"></script>
+    <script src="https://code.highcharts.com/modules/histogram-bellcurve.js"></script>
+    <script src="https://code.highcharts.com/modules/funnel.js"></script>
+    <script src="https://code.highcharts.com/modules/wordcloud.js"></script>
+    <script src="https://code.highcharts.com/modules/pareto.js"></script>
+    <script src="https://code.highcharts.com/modules/dumbbell.js"></script>
+    <script src="https://code.highcharts.com/modules/lollipop.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #1a1a2e;
+        }
+        #query-section {
+            max-width: 800px;
+            margin: 0 auto 20px;
+            display: flex;
+            gap: 10px;
+        }
+        #query-input {
+            flex: 1;
+            padding: 12px 16px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        #query-input:focus { border-color: #4a90d9; }
+        #submit-btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: #4a90d9;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #submit-btn:hover { background: #357abd; }
+        #submit-btn:disabled { background: #999; cursor: not-allowed; }
+        #progress-section {
+            max-width: 800px;
+            margin: 0 auto 20px;
+            display: none;
+        }
+        #progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        #progress-fill {
+            height: 100%;
+            background: #4a90d9;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        #progress-text {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+        #error-section {
+            max-width: 800px;
+            margin: 0 auto 20px;
+            padding: 12px 16px;
+            background: #fee;
+            border: 1px solid #fcc;
+            border-radius: 8px;
+            color: #c00;
+            display: none;
+        }
+        #charts-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .chart-wrapper {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .chart-div {
+            width: 100%;
+            min-height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pay-i Analytics</h1>
+
+    <div id="query-section">
+        <input type="text" id="query-input" placeholder="Ask about your data... (e.g., 'Show me daily spend by resource')" />
+        <button id="submit-btn">Ask</button>
+    </div>
+
+    <div id="progress-section">
+        <div id="progress-bar"><div id="progress-fill"></div></div>
+        <div id="progress-text"></div>
+    </div>
+
+    <div id="error-section"></div>
+
+    <div id="charts-container"></div>
+
+    <script>
+        const queryInput = document.getElementById('query-input');
+        const submitBtn = document.getElementById('submit-btn');
+        const progressSection = document.getElementById('progress-section');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        const errorSection = document.getElementById('error-section');
+        const chartsContainer = document.getElementById('charts-container');
+
+        let chartCounter = 0;
+
+        queryInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !submitBtn.disabled) submitQuery();
+        });
+        submitBtn.addEventListener('click', submitQuery);
+
+        async function submitQuery() {
+            const query = queryInput.value.trim();
+            if (!query) return;
+
+            submitBtn.disabled = true;
+            chartsContainer.innerHTML = '';
+            errorSection.style.display = 'none';
+            progressSection.style.display = 'block';
+            progressFill.style.width = '0%';
+            progressText.textContent = 'Starting...';
+            chartCounter = 0;
+
+            try {
+                const response = await fetch('/api/query', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({query}),
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, {stream: true});
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    let eventType = '';
+                    for (const line of lines) {
+                        if (line.startsWith('event: ')) {
+                            eventType = line.slice(7);
+                        } else if (line.startsWith('data: ')) {
+                            const data = JSON.parse(line.slice(6));
+                            handleEvent(eventType, data);
+                        }
+                    }
+                }
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        function handleEvent(event, data) {
+            switch (event) {
+                case 'progress':
+                    progressFill.style.width = data.percent + '%';
+                    progressText.textContent = data.message || data.step;
+                    break;
+                case 'chart':
+                    renderChart(data);
+                    break;
+                case 'complete':
+                    progressText.textContent = `Done! ${data.count} chart(s) rendered.`;
+                    setTimeout(() => { progressSection.style.display = 'none'; }, 2000);
+                    break;
+                case 'error':
+                    showError(data.message);
+                    break;
+            }
+        }
+
+        function renderChart(data) {
+            chartCounter++;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'chart-wrapper';
+            const chartDiv = document.createElement('div');
+            chartDiv.className = 'chart-div';
+            chartDiv.id = 'chart-' + chartCounter;
+            wrapper.appendChild(chartDiv);
+            chartsContainer.appendChild(wrapper);
+
+            const config = data.config;
+            delete config._modules;
+            Highcharts.chart(chartDiv.id, config);
+        }
+
+        function showError(message) {
+            errorSection.textContent = 'Error: ' + message;
+            errorSection.style.display = 'block';
+            progressSection.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

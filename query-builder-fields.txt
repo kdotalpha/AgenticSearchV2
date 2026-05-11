@@ -1,0 +1,210 @@
+Pay-i Query Builder Field Descriptions
+========================================
+
+================================================================================
+PIVOT FIELDS
+================================================================================
+Pivot fields are dimensions used to group and slice data in the Query Builder.
+They define the axes along which metrics are aggregated and displayed.
+
+--------------------------------------------------------------------------------
+@ Day
+--------------------------------------------------------------------------------
+A time-based pivot that groups data by calendar day. Used to view trends and
+totals on a daily granularity. Part of the time-series pivot family (prefixed
+with @).
+
+--------------------------------------------------------------------------------
+@ Hour
+--------------------------------------------------------------------------------
+A time-based pivot that groups data by hour. Provides finer-grained temporal
+analysis than Day, useful for identifying intra-day usage patterns or spikes.
+
+--------------------------------------------------------------------------------
+@ Minute
+--------------------------------------------------------------------------------
+A time-based pivot that groups data by minute. The most granular time pivot,
+useful for real-time monitoring or investigating specific incidents.
+
+--------------------------------------------------------------------------------
+@ Month
+--------------------------------------------------------------------------------
+A time-based pivot that groups data by calendar month. Useful for high-level
+trend analysis, billing cycles, and month-over-month comparisons.
+
+--------------------------------------------------------------------------------
+Category
+--------------------------------------------------------------------------------
+Groups data by Pay-i Category -- the top-level grouping for tracked spending.
+System-managed categories are prefixed with "system." (e.g., system.openai,
+system.anthropic) and represent major AI providers. Custom categories can be
+created for negotiated enterprise pricing or internal cost allocation.
+
+--------------------------------------------------------------------------------
+Category/Resource
+--------------------------------------------------------------------------------
+A combined pivot that groups data by both Category and Resource together,
+providing a fully-qualified view of spending (e.g., system.openai / gpt-4o).
+Useful when you need to see the specific model within its provider context.
+
+--------------------------------------------------------------------------------
+Instance ID
+--------------------------------------------------------------------------------
+Groups data by Use Case Instance -- the unique identifier for a single execution
+of a use case. Each time a use case runs (e.g., one conversation, one document
+summarization), it receives a distinct Instance ID. Pivoting by this field lets
+you compare costs and behavior across individual executions.
+
+--------------------------------------------------------------------------------
+Limit
+--------------------------------------------------------------------------------
+Groups data by Limit (budget control). Limits are governance mechanisms that
+track spending against a defined maximum. They come in two types: "Allow" limits
+(permit overrun but track it) and "Block" limits (hard-stop usage at the cap).
+Pivoting by Limit shows how spending distributes across your configured budget
+controls.
+
+--------------------------------------------------------------------------------
+Resource
+--------------------------------------------------------------------------------
+Groups data by Resource -- a specific cost-generating service tracked by Pay-i,
+typically an individual AI model (e.g., gpt-4o, claude-sonnet-4-6-20250514,
+dall-e-3). Each Resource has pricing defined per Unit Type (text, vision, image,
+video) with separate input and output costs.
+
+--------------------------------------------------------------------------------
+Response Code
+--------------------------------------------------------------------------------
+Groups data by the HTTP response code returned by the GenAI provider for each
+request. This allows you to segment successful calls (2xx) from client errors
+(4xx) and server errors (5xx), enabling failure rate analysis and
+troubleshooting.
+
+--------------------------------------------------------------------------------
+Use Case
+--------------------------------------------------------------------------------
+Groups data by Use Case name -- the named collection of related, cost-generating
+events that contribute to a single user experience. Use cases are defined with
+snake_case names (max 64 characters) and represent end-to-end scenarios like
+"document_summarization" or "customer_support_chat".
+
+--------------------------------------------------------------------------------
+Use Case Response Code
+--------------------------------------------------------------------------------
+Groups data by the overall outcome status of a Use Case Instance. While
+Response Code tracks individual request-level HTTP status, Use Case Response Code
+reflects the aggregate result of the entire multi-step use case execution --
+indicating whether the use case as a whole succeeded or failed.
+
+--------------------------------------------------------------------------------
+Use Case Semantic Failure
+--------------------------------------------------------------------------------
+Groups data by semantic failure classification at the use case level. A semantic
+failure occurs when the AI produces a response that is technically successful
+(HTTP 200) but fails to meet business intent -- e.g., a hallucinated answer, an
+off-topic response, or a refusal to answer. This field tracks those
+business-logic failures distinct from provider-level HTTP errors.
+
+--------------------------------------------------------------------------------
+Use Case Version
+--------------------------------------------------------------------------------
+Groups data by the version number of a Use Case. Use cases are versioned to
+reflect changes over time (e.g., switching underlying models, modifying prompts,
+or altering workflow steps). Versioning enables cost and quality comparisons
+across iterations of the same use case.
+
+
+================================================================================
+VALUE FIELDS (Metrics)
+================================================================================
+Value fields are the measurements displayed for each pivot grouping. They
+represent the quantitative data you want to analyze.
+
+--------------------------------------------------------------------------------
+Spend
+--------------------------------------------------------------------------------
+The total cost in USD incurred for the grouped data. Calculated from provider
+pricing applied to consumed units (tokens, images, etc.). This is the "base"
+cost reflecting what the provider charges. Broken down internally into input
+and output costs per unit type.
+
+--------------------------------------------------------------------------------
+Units
+--------------------------------------------------------------------------------
+The total number of billable units consumed (e.g., tokens for text models,
+images for image generation models, characters for certain APIs). Units are
+tracked per Unit Type (text, vision, image, video) and include both input and
+output consumption.
+
+--------------------------------------------------------------------------------
+Instances
+--------------------------------------------------------------------------------
+The count of Use Case Instances (unique executions) within the grouped data.
+Each instance represents one complete run of a use case -- one conversation, one
+document processed, one agent workflow completed. Useful for understanding
+volume and calculating per-instance averages.
+
+--------------------------------------------------------------------------------
+Requests
+--------------------------------------------------------------------------------
+The count of individual API calls (requests) to GenAI providers within the
+grouped data. Requests are the fundamental unit of tracking in Pay-i. Each
+request captures usage metrics, performance data, cost, status, and associated
+metadata.
+
+--------------------------------------------------------------------------------
+Request: Date
+--------------------------------------------------------------------------------
+The timestamp of when the individual request was made. Used as a value field
+to display or export the exact date/time of each request in detail-level
+reports rather than aggregated views.
+
+--------------------------------------------------------------------------------
+Request: ID
+--------------------------------------------------------------------------------
+The unique identifier assigned to each request by Pay-i (the request_id from
+xproxy_result). Used for debugging specific requests, updating request
+properties after the fact, or correlating Pay-i data with provider logs.
+
+--------------------------------------------------------------------------------
+Request: Latency
+--------------------------------------------------------------------------------
+The response time / duration of the GenAI provider call, measuring how long the
+request took from submission to completion. Useful for performance monitoring,
+SLA tracking, and identifying slow requests or provider degradation.
+
+--------------------------------------------------------------------------------
+Request: Full Chat
+--------------------------------------------------------------------------------
+The complete conversational content of the request -- both the prompt (input)
+and the response (output) combined. Provides the full context of the
+interaction for review, debugging, or quality analysis.
+
+--------------------------------------------------------------------------------
+Request: Prompt
+--------------------------------------------------------------------------------
+The input content sent to the GenAI provider (the user's message or system
+prompt). Captured when log_prompt_and_response is enabled (default: True) in
+payi_instrument(). Useful for prompt analysis, debugging, and quality review.
+
+--------------------------------------------------------------------------------
+Request: Response
+--------------------------------------------------------------------------------
+The output content returned by the GenAI provider (the model's reply). Captured
+when log_prompt_and_response is enabled (default: True) in payi_instrument().
+Useful for quality analysis, detecting hallucinations, and auditing outputs.
+
+--------------------------------------------------------------------------------
+Request: Spend
+--------------------------------------------------------------------------------
+The cost of an individual request in USD, as opposed to the aggregated "Spend"
+field. Shows the per-request cost breakdown, useful in detail-level reports to
+identify expensive individual calls.
+
+--------------------------------------------------------------------------------
+Request: Tool Calls
+--------------------------------------------------------------------------------
+The tool/function calls made by the AI model within a request. When models use
+tool use (function calling), this field captures which tools were invoked and
+their parameters. Useful for understanding agent behavior, debugging tool
+selection, and analyzing agentic workflow patterns.
