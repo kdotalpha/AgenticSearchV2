@@ -17,13 +17,8 @@ class PayiClient:
     def fetch_report(self, report_id: str, from_date: str, to_date: str) -> list[dict]:
         resp = self.session.get(
             f"{self.base_url}/api/v1/reports/{report_id}",
-            params={"from": "2020-01-01", "to": "2030-01-01"},
+            params={"from": from_date, "to": to_date},
         )
-        if resp.status_code == 400:
-            resp = self.session.get(
-                f"{self.base_url}/api/v1/reports/{report_id}",
-                params={"from": from_date, "to": to_date},
-            )
         resp.raise_for_status()
         text = resp.text.lstrip("﻿")
         reader = csv.DictReader(io.StringIO(text))

@@ -9,8 +9,8 @@ Pay-i Analytics is a natural-language-to-chart application for exploring AI/GenA
 ## Running the App
 
 ```bash
-# Install dependencies (Python 3.13+, virtual env at .venv/)
-pip install -r requirements.txt
+# Install dependencies (Python 3.13+, installed globally)
+pip3 install -r requirements.txt
 
 # Copy .env.example to .env and fill in PAYI_BASE_URL, PAYI_API_KEY, REPORT_ID_1..8
 
@@ -54,7 +54,7 @@ Reports 1–8 are pre-configured Pay-i Query Builder reports. Their UUIDs are st
 
 ## Environment
 
-- Python 3.13+ with `.venv/` virtualenv
+- Python 3.13+ (dependencies installed globally, no virtualenv)
 - FastAPI + Uvicorn
 - No test suite currently exists
 - Auth to Pay-i uses `xproxy-api-key` header (set via `PAYI_API_KEY` env var)
