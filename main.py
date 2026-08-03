@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import PAYI_BASE_URL, PAYI_API_KEY, REPORT_IDS, DEFAULT_TIME_RANGE_DAYS
+from config import PAYI_BASE_URL, PAYI_API_KEY, REPORT_IDS
 from payi_client import PayiClient
 from claude_interpreter import interpret_query
 from data_transformer import apply_filters, build_highcharts_config
@@ -51,7 +51,7 @@ async def query(request: Request):
         try:
             yield _sse_event("progress", {"step": "interpreting", "percent": 10, "message": "Interpreting your query..."})
 
-            interpretation = interpret_query(user_query)
+            interpretation = await interpret_query(user_query)
 
             yield _sse_event("progress", {
                 "step": "interpreted",
@@ -63,7 +63,8 @@ async def query(request: Request):
 
             reports_needed = interpretation.get("reports_needed", [])
             time_range = interpretation.get("time_range", {})
-            from_date = time_range.get("from_date", (date.today() - timedelta(days=DEFAULT_TIME_RANGE_DAYS)).isoformat())
+            # Fallback matches the 90-day default the system prompt gives the LLM
+            from_date = time_range.get("from_date", (date.today() - timedelta(days=90)).isoformat())
             to_date = time_range.get("to_date", date.today().isoformat())
             charts = interpretation.get("charts", [])
             filters = interpretation.get("filters", [])

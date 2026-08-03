@@ -4,6 +4,24 @@ from concurrent.futures import ThreadPoolExecutor
 
 import requests
 
+# The Pay-i API returns compact PascalCase CSV headers; the rest of the app
+# (prompts, transforms, docs) speaks the Query Builder's display names.
+COLUMN_NAME_MAP = {
+    "DateDay": "Day",
+    "DateMonth": "Month",
+    "DateHour": "Hour",
+    "DateMinute": "Minute",
+    "UseCase": "Use Case",
+    "UseCaseVersion": "Use Case Version",
+    "UseCaseResponseCode": "Use Case Response Code",
+    "InstanceId": "Instance ID",
+    "ResponseCode": "Response Code",
+    "RequestLatency": "Request: Latency",
+    "RequestId": "Request: ID",
+    "RequestDate": "Request: Date",
+    "RequestSpend": "Request: Spend",
+}
+
 
 class PayiClient:
     def __init__(self, base_url: str, api_key: str):
@@ -18,10 +36,13 @@ class PayiClient:
         resp = self.session.get(
             f"{self.base_url}/api/v1/reports/{report_id}",
             params={"from": from_date, "to": to_date},
+            timeout=120,
         )
         resp.raise_for_status()
         text = resp.text.lstrip("﻿")
         reader = csv.DictReader(io.StringIO(text))
+        if reader.fieldnames:
+            reader.fieldnames = [COLUMN_NAME_MAP.get(name, name) for name in reader.fieldnames]
         rows = list(reader)
 
         # Filter rows by date range if a Day/Month column exists

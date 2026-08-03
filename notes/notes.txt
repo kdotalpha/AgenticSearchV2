@@ -1,0 +1,21 @@
+Update the saved report IDs and Pay-i Key:
+
+report1:  @ Day, Use Case, Resource         │ Spend, Units, Requests, Instances, Request: Latency
+UUID: d0c682c6-9bf3-46e3-ab43-bf8f317d46d5
+
+report2: @ Month, Category, Use Case       │ Spend, Instances, Requests, Units
+UUID: 611905ef-21e8-4ef5-bc1e-72e9fab861af
+
+report3: Use Case, Instance ID, Resource   │ Spend, Request: Latency
+UUID: 0102304d-846e-4239-896d-77c535d2a6f3
+
+report4:  @ Hour, Category                  │ Spend, Requests, Units
+UUID: c4b37a33-d355-4f99-8e90-d6ee2313426d
+
+report5: @ Day, Resource, Response Code    │ Spend, Requests, Request: Latency
+UUID: 7239c1f3-3078-4664-97a2-5b01a6736677
+
+report6:  @ Day, Use Case, Use Case Version │ Spend, Units, Instances, Requests
+UUID: 7239c1f3-3078-4664-97a2-5b01a6736677
+
+pay-i key: sk-payi-app-Y_1VsydotRlthilN9waPpp.s9ulZB1Q_QhYVPF0Nb837tTjW7eAsiHkpZgt1+i-QekfI+eyYBM71XvdGDNArz+irfpEz8TnneYILLtOo6AydNAEnPJ6kuo046EkqZ3A~zJZ7hfNDRt9Sp6_jMCDfQN

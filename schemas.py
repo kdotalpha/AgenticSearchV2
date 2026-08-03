@@ -3,8 +3,8 @@ INTERPRETATION_SCHEMA = {
     "properties": {
         "reports_needed": {
             "type": "array",
-            "items": {"type": "integer", "minimum": 1, "maximum": 8},
-            "description": "Which report IDs (1-8) to fetch"
+            "items": {"type": "integer", "minimum": 1, "maximum": 6},
+            "description": "Which report IDs (1-6) to fetch"
         },
         "time_range": {
             "type": "object",
@@ -46,7 +46,7 @@ INTERPRETATION_SCHEMA = {
                         "type": "string",
                         "description": "One or two sentences explaining what this chart reveals in the context of the user's question. Describe the insight or comparison the viewer should take away."
                     },
-                    "report_id": {"type": "integer", "minimum": 1, "maximum": 8},
+                    "report_id": {"type": "integer", "minimum": 1, "maximum": 6},
                     "x_field": {"type": "string"},
                     "y_field": {"type": "string"},
                     "series_field": {"type": ["string", "null"]},

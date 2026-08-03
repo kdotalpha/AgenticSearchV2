@@ -1,102 +1,96 @@
+import asyncio
 import json
+import logging
 import os
-import shutil
-import subprocess
-import sys
-from pathlib import Path
 
 from config import PROJECT_ROOT
 from prompts import build_system_prompt
 from schemas import INTERPRETATION_SCHEMA
 
+logger = logging.getLogger(__name__)
 
-def _find_claude():
-    found = shutil.which("claude")
-    if found:
-        return found
-    candidates = [
-        "/opt/homebrew/bin/claude",
-        "/usr/local/bin/claude",
-        os.path.expanduser("~/.npm-global/bin/claude"),
-    ]
-    for c in candidates:
-        if os.path.isfile(c) and os.access(c, os.X_OK):
-            return c
-    return None
+INTERPRET_TIMEOUT_S = 120
 
 
-CLAUDE_PATH = _find_claude()
+async def interpret_query(user_query: str) -> dict:
+    # Lazy import so module import (and anything that only touches other
+    # symbols here) never requires the SDK to be installed.
+    from claude_agent_sdk import ClaudeAgentOptions, query
 
-
-def _resolve_claude_cmd():
-    if not CLAUDE_PATH:
-        return None
-
-    if sys.platform != "win32" or not CLAUDE_PATH.lower().endswith((".cmd", ".ps1")):
-        return [CLAUDE_PATH]
-
-    cmd_dir = os.path.dirname(CLAUDE_PATH)
-    pkg_dir = os.path.join(cmd_dir, "node_modules", "@anthropic-ai", "claude-code")
-    pkg_json_path = os.path.join(pkg_dir, "package.json")
-
-    if os.path.exists(pkg_json_path):
-        try:
-            with open(pkg_json_path, "r", encoding="utf-8") as f:
-                pkg = json.load(f)
-
-            bin_field = pkg.get("bin", {})
-            if isinstance(bin_field, str):
-                entry = bin_field
-            elif isinstance(bin_field, dict):
-                entry = bin_field.get("claude", "")
-            else:
-                entry = ""
-
-            if entry:
-                entry_path = os.path.normpath(os.path.join(pkg_dir, entry))
-                if os.path.exists(entry_path):
-                    if entry_path.lower().endswith(".exe"):
-                        return [entry_path]
-                    node = shutil.which("node")
-                    if node:
-                        return [node, entry_path]
-        except Exception:
-            pass
-
-    return [CLAUDE_PATH]
-
-
-CLAUDE_CMD = _resolve_claude_cmd()
-
-
-def interpret_query(user_query: str) -> dict:
-    if not CLAUDE_CMD:
-        raise RuntimeError("Claude CLI not found in PATH")
-
-    system_prompt = build_system_prompt()
-    prompt = f"{system_prompt}\n\n---\n\nUser query: {user_query}"
-    schema_str = json.dumps(INTERPRETATION_SCHEMA)
-
-    result = subprocess.run(
-        [*CLAUDE_CMD, "-p", "--model", "sonnet", "--output-format", "json",
-         "--json-schema", schema_str],
-        input=prompt,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=120,
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    options = ClaudeAgentOptions(
+        tools=[],  # no built-ins: pure NL->JSON interpretation
+        setting_sources=[],  # hermetic: no CLAUDE.md/skills/hooks leak in
+        permission_mode="dontAsk",
+        system_prompt=build_system_prompt(),
+        model="sonnet",
+        max_turns=10,  # headroom for structured-output retries
+        max_budget_usd=None,  # no cost ceiling: never abort mid-interpretation
+        output_format={"type": "json_schema", "schema": INTERPRETATION_SCHEMA},
         cwd=str(PROJECT_ROOT),
+        env={"ANTHROPIC_API_KEY": api_key} if api_key else {},
+        stderr=lambda line: logger.debug("[claude-cli] %s", line),
     )
 
-    if result.returncode != 0:
-        raise RuntimeError(f"Claude CLI failed: {result.stderr[:500]}")
+    prompt = f"User query: {user_query}"
+    try:
+        out = await asyncio.wait_for(_consume(query, prompt, options), INTERPRET_TIMEOUT_S)
+    except asyncio.TimeoutError:
+        raise RuntimeError(f"Claude interpretation timed out after {INTERPRET_TIMEOUT_S}s")
+    return _extract(out)
 
-    response = json.loads(result.stdout)
-    structured_output = response.get("structured_output")
-    if structured_output is None:
-        structured_output = response.get("result", response)
-        if isinstance(structured_output, str):
-            structured_output = json.loads(structured_output)
 
-    return structured_output
+async def _consume(query_fn, prompt: str, options) -> dict:
+    """Drain the query() stream into a plain dict, never raising mid-stream.
+
+    query() raises after yielding the error ResultMessage, so whatever
+    arrived first wins; don't break on the result — trailing system
+    events can follow it.
+    """
+    from claude_agent_sdk import AssistantMessage, ResultMessage, TextBlock
+
+    out: dict = {
+        "subtype": None,
+        "is_error": False,
+        "result": None,
+        "structured_output": None,
+        "last_text": None,
+        "error": None,
+    }
+    try:
+        async for msg in query_fn(prompt=prompt, options=options):
+            if isinstance(msg, AssistantMessage):
+                for block in msg.content:
+                    if isinstance(block, TextBlock) and block.text.strip():
+                        out["last_text"] = block.text
+            elif isinstance(msg, ResultMessage):
+                out["subtype"] = msg.subtype
+                out["is_error"] = msg.is_error
+                out["result"] = msg.result
+                out["structured_output"] = getattr(msg, "structured_output", None)
+    except Exception as exc:
+        out["error"] = f"{type(exc).__name__}: {exc}"
+    return out
+
+
+def _extract(out: dict) -> dict:
+    structured = out.get("structured_output")
+    if isinstance(structured, dict):
+        return structured
+
+    if out.get("subtype") == "success" and not out.get("is_error"):
+        for candidate in (out.get("result"), out.get("last_text")):
+            if isinstance(candidate, dict):
+                return candidate
+            if isinstance(candidate, str):
+                try:
+                    return json.loads(candidate)
+                except json.JSONDecodeError:
+                    continue
+
+    if out.get("subtype") == "error_max_structured_output_retries":
+        raise RuntimeError("Claude could not produce output matching the interpretation schema")
+    if out.get("subtype") is None:
+        raise RuntimeError(f"Claude agent failed to start: {out.get('error') or 'no result received'}")
+    detail = out.get("result") or out.get("error") or out.get("last_text") or "unknown error"
+    raise RuntimeError(f"Claude agent error ({out.get('subtype')}): {str(detail)[:500]}")

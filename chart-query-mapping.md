@@ -12,34 +12,45 @@
 
 ## Minimum Queries for Maximum Chart Coverage
 
-### Query 1: Daily Time Series by Resource
+Rows with pivot dimensions a chart doesn't use collapse automatically (the
+transform layer sums over them), so each 3-pivot query also serves every
+simpler view of its dimensions. That's what lets 6 queries cover everything.
+
+### Query 1: Daily Time Series by Use Case and Resource
 
 | Setting | Value |
 |---------|-------|
-| **Pivots** | `@ Day`, `Resource` |
+| **Pivots** | `@ Day`, `Use Case`, `Resource` |
 | **Values** | `Spend`, `Units`, `Requests`, `Instances` |
+
+*The most versatile query — 3 pivots covering time, business logic, and model dimensions. Collapse Use Case for pure by-Resource views, collapse Resource for by-Use-Case views, collapse Day for relationship charts. Do NOT add `Request: Latency` here — any `Request: *` value flips the query to per-request detail level (~60k rows/week, gateway timeouts on long ranges).*
 
 **Produces these charts:**
 
 | Chart Type | How to Render |
 |------------|---------------|
-| **Line** | x=Day, y=Spend (one line per Resource) |
+| **Line** | x=Day, y=Spend (one line per Resource, or per Use Case) |
 | **Area** | Same as line, filled |
-| **Stacked Area** | Spend stacked by Resource over time |
+| **Stacked Area** | Spend stacked by Resource (or Use Case) over time |
+| **Stacked % Area** | Percentage contribution of each Use Case per day |
 | **Spline** | Smoothed line variant |
 | **Column** | Grouped columns: x=Day, y=Spend, grouped by Resource |
-| **Stacked Column** | Daily spend stacked by Resource |
+| **Stacked Column** | Daily spend stacked by Resource (or Use Case) |
 | **Stacked % Column** | Percentage contribution of each Resource per day |
 | **Bar** | Horizontal variant of column |
 | **Stacked Bar** | Horizontal stacked |
-| **Streamgraph** | Spend by Resource flowing over time |
-| **Heatmap** | x=Day, y=Resource, color=Spend |
+| **Streamgraph** | Spend by Resource (or Use Case) flowing over time |
+| **Heatmap** | x=Day, y=Resource (or Use Case), color=Spend |
 | **Pie/Donut** | Aggregate Spend by Resource (collapse time) |
 | **Treemap** | Aggregate Spend by Resource (collapse time) |
 | **Word Cloud** | Resource names weighted by total Spend or Requests |
-| **Radar/Spider** | Resources as spokes, Spend as radial value (best with few resources) |
+| **Radar/Spider** | Resources (or Use Cases) as spokes, Spend as radial value |
+| **Bubble** | x=Day, y=Spend, z=Requests per Use Case (size=volume) |
+| **Sankey** | Flow: Use Case → Resource, weight=Spend |
+| **Dependency Wheel** | Use Case ↔ Resource relationships weighted by Spend |
+| **Pareto** | Resources (or Use Cases) sorted by Spend desc + cumulative % line |
 
-**Total: ~15 chart types from 1 query**
+**Total: ~20 chart types from 1 query**
 
 ---
 
@@ -77,7 +88,7 @@
 | **Pivots** | `Use Case`, `Instance ID`, `Resource` |
 | **Values** | `Spend`, `Request: Latency` |
 
-*Note: Requests and Units cannot be used as values when pivoting by Instance ID (Pay-i limitation).*
+*Note: Requests and Units cannot be used as values when pivoting by Instance ID (Pay-i limitation). This query is per-request detail level (`Request: Latency` forces it; the API auto-adds `Request: ID`) — keep date ranges short (≤14 days) to avoid gateway timeouts.*
 
 **Produces these charts:**
 
@@ -118,35 +129,41 @@
 
 ---
 
-### Query 5: Response Code Analysis by Resource
+### Query 5: Daily Response Code Analysis by Resource
 
 | Setting | Value |
 |---------|-------|
-| **Pivots** | `Response Code`, `Resource` |
-| **Values** | `Requests`, `Spend` |
+| **Pivots** | `@ Day`, `Resource`, `Response Code` |
+| **Values** | `Spend`, `Requests` |
+
+*Collapse Day for aggregate error-rate views; keep it for error trends over time. No `Request: Latency` here — it would force per-request detail (see Query 1 note); latency analysis lives in Query 3.*
 
 **Produces these charts:**
 
 | Chart Type | How to Render |
 |------------|---------------|
-| **Pie/Donut** | Proportion of 2xx vs 4xx vs 5xx |
-| **Stacked Bar** | Error distribution per Resource |
+| **Pie/Donut** | Proportion of 2xx vs 4xx vs 5xx (collapse Day) |
+| **Stacked Bar** | Error distribution per Resource (collapse Day) |
 | **Stacked % Column** | Error rate comparison across Resources |
 | **Gauge (solid)** | Success rate as single KPI (% of 2xx) |
 | **Bullet** | Actual error rate vs acceptable threshold |
 | **Waterfall** | Total requests broken down by response code type |
 | **Pareto** | Response codes sorted by frequency with cumulative % |
+| **Stacked Column** | Requests by Response Code over time |
+| **Heatmap** | x=Day, y=Resource, color=Requests (error volume) |
 
-**Total: ~7 chart types from 1 query**
+**Total: ~9 chart types from 1 query**
 
 ---
 
-### Query 6: Use Case Version Comparison
+### Query 6: Daily Use Case Version Comparison
 
 | Setting | Value |
 |---------|-------|
-| **Pivots** | `Use Case`, `Use Case Version` |
+| **Pivots** | `@ Day`, `Use Case`, `Use Case Version` |
 | **Values** | `Spend`, `Units`, `Instances`, `Requests` |
+
+*Collapse Day for version-vs-version totals; keep it for version adoption/cost trends over time. The Day column also enables client-side date filtering.*
 
 **Produces these charts:**
 
@@ -159,77 +176,22 @@
 | **Bar** | Horizontal comparison |
 | **Heatmap** | x=Version, y=Use Case, color=Spend |
 | **Radar** | Multiple metrics (Spend, Requests, Units) per version |
+| **Line** | x=Day, y=Spend, one line per version (rollout trends) |
 
-**Total: ~7 chart types from 1 query**
-
----
-
-### Query 7: Daily Time Series by Use Case and Resource
-
-| Setting | Value |
-|---------|-------|
-| **Pivots** | `@ Day`, `Use Case`, `Resource` |
-| **Values** | `Spend`, `Requests`, `Instances`, `Request: Latency` |
-
-*This is the most versatile query — 3 pivots covering time, business logic, and model dimensions. Columns can be aggregated/ignored to produce simpler views (e.g., collapse Resource to get Day × Use Case).*
-
-**Produces these charts:**
-
-| Chart Type | How to Render |
-|------------|---------------|
-| **Line** | x=Day, y=Spend (one line per Use Case, or per Resource) |
-| **Area** | Same as line, filled |
-| **Stacked Area** | Spend stacked by Use Case over time |
-| **Stacked % Area** | Percentage contribution of each Use Case per day |
-| **Column** | Grouped columns: x=Day, y=Requests, grouped by Use Case |
-| **Stacked Column** | Daily spend stacked by Use Case×Resource |
-| **Heatmap** | x=Day, y=Use Case, color=Spend (or y=Resource) |
-| **Streamgraph** | Spend by Use Case flowing over time |
-| **Bubble** | x=Day, y=Spend, z=Requests per Use Case (size=volume) |
-| **Sankey** | Flow: Use Case → Resource, weight=Spend |
-| **Dependency Wheel** | Use Case ↔ Resource relationships weighted by Spend |
-| **Pareto** | Resources (or Use Cases) sorted by Spend desc + cumulative % line |
-| **Radar/Spider** | Use Cases as spokes, multiple metrics as axes |
-| **Lollipop** | Average Latency per Use Case or Resource (collapse time) |
-
-**Total: ~14 chart types from 1 query**
+**Total: ~8 chart types from 1 query**
 
 ---
 
-### Query 8: Daily Detail with Latency (for Time-Correlated Scatter)
-
-| Setting | Value |
-|---------|-------|
-| **Pivots** | `@ Day`, `Resource`, `Response Code` |
-| **Values** | `Spend`, `Requests`, `Request: Latency` |
-
-**Produces these charts:**
-
-| Chart Type | How to Render |
-|------------|---------------|
-| **Scatter** | x=Day, y=Latency, color=Response Code |
-| **Bubble** | x=Day, y=Latency, z=Spend, color=Resource |
-| **Error Bar** | Average latency ± std dev per day per Resource |
-| **Line + Error Area** | Combo: avg latency line with error band |
-| **Heatmap** | x=Day, y=Resource, color=Latency |
-| **Stacked Column** | Requests by Response Code over time |
-
-**Total: ~6 chart types from 1 query**
-
----
-
-## Summary: 8 Queries → ~40+ Unique Chart Types
+## Summary: 6 Queries → ~40+ Unique Chart Types
 
 | # | Query Pivots | Key Charts Unlocked |
 |---|-------------|-------------------|
-| 1 | Day + Resource | Line, Area, Column, Bar, Stacked variants, Streamgraph, Heatmap, Pie, Treemap |
+| 1 | Day + Use Case + Resource | Line, Area, Column, Bar, Stacked variants, Streamgraph, Heatmap, Pie, Treemap, Bubble, Sankey, Dependency Wheel, Pareto, Radar |
 | 2 | Month + Category + Use Case | Sunburst, Sankey, Dependency Wheel, nested Treemap, Funnel |
 | 3 | Use Case + Instance ID + Resource | Box Plot, Scatter, Histogram, Bell Curve, Column Range |
 | 4 | Hour + Category | Polar, Wind Rose, Radar (clock-pattern charts) |
-| 5 | Response Code + Resource | Gauge, Bullet, Pareto, Waterfall, error-rate Pie |
-| 6 | Use Case + Version | Dumbbell, version-comparison charts |
-| 7 | Day + Use Case + Resource | Line, Area, Stacked, Heatmap, Bubble, Sankey, Pareto, Streamgraph, Radar |
-| 8 | Day + Resource + Response Code | Scatter, Bubble, Error Bar (multi-metric time analysis) |
+| 5 | Day + Resource + Response Code | Gauge, Bullet, Pareto, Waterfall, error-rate Pie, error trends |
+| 6 | Day + Use Case + Version | Dumbbell, version-comparison charts, version trends |
 
 ---
 
@@ -278,10 +240,10 @@ The frontend will need a transformation layer since raw CSV is always tabular. K
 ## Recommended Implementation Priority
 
 **Phase 1 (Queries 1, 3, 5)** — Covers the bread-and-butter charts:
-- Line, Area, Column, Bar, Pie, Scatter, Box Plot, Gauge
+- Line, Area, Column, Bar, Pie, Scatter, Box Plot, Gauge, Sankey, Pareto
 
 **Phase 2 (Queries 2, 4)** — Adds advanced visualizations:
-- Sunburst, Sankey, Treemap, Polar/Radar, Heatmap
+- Sunburst, Sankey (Category→Use Case), Treemap, Polar/Radar, Heatmap
 
-**Phase 3 (Queries 6, 7, 8)** — Adds comparison and use-case-level views:
-- Dumbbell, Waterfall, Bubble, Error Bar, Use Case trends
+**Phase 3 (Query 6)** — Adds version comparison views:
+- Dumbbell, Waterfall, version trends
