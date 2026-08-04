@@ -1,3 +1,60 @@
+# Single source of truth for a chart spec, shared by the initial interpretation and the
+# post-fetch chart-selection pass so the chart_type enum can never drift between them.
+CHART_ITEM_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "chart_type": {
+            "type": "string",
+            "enum": [
+                "line", "area", "stacked_area", "percent_area",
+                "spline", "column", "stacked_column", "percent_column",
+                "bar", "stacked_bar", "streamgraph",
+                "pie", "donut", "treemap", "sunburst",
+                "scatter", "bubble",
+                "heatmap",
+                "boxplot", "histogram", "bellcurve",
+                "column_range", "area_range",
+                "waterfall", "pareto", "funnel",
+                "sankey", "dependency_wheel",
+                "radar", "polar_column", "wind_rose",
+                "dumbbell", "lollipop",
+                "word_cloud",
+                "error_bar", "combo_line_column"
+            ]
+        },
+        "title": {
+            "type": "string",
+            "description": "A concise, specific chart title naming the metric and dimensions shown (e.g., 'Daily Spend by Resource'). Never use generic titles like 'Chart' or 'Data'."
+        },
+        "description": {
+            "type": "string",
+            "description": "One or two sentences explaining what this chart reveals in the context of the user's question. Describe the insight or comparison the viewer should take away."
+        },
+        "report_id": {"type": "integer", "minimum": 1, "maximum": 6},
+        "x_field": {"type": "string"},
+        "y_field": {"type": "string"},
+        "series_field": {"type": ["string", "null"]},
+        "value_field": {"type": "string"},
+        "aggregation": {
+            "type": "string",
+            "enum": ["sum", "avg", "min", "max", "count", "none"]
+        }
+    },
+    "required": ["chart_type", "title", "description", "report_id", "value_field"]
+}
+
+# Second interpreter pass: re-pick charts once the real data shape is known.
+CHART_SELECTION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "charts": {
+            "type": "array",
+            "items": CHART_ITEM_SCHEMA
+        }
+    },
+    "required": ["charts"]
+}
+
 INTERPRETATION_SCHEMA = {
     "type": "object",
     "properties": {
@@ -16,48 +73,7 @@ INTERPRETATION_SCHEMA = {
         },
         "charts": {
             "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "chart_type": {
-                        "type": "string",
-                        "enum": [
-                            "line", "area", "stacked_area", "percent_area",
-                            "spline", "column", "stacked_column", "percent_column",
-                            "bar", "stacked_bar", "streamgraph",
-                            "pie", "donut", "treemap", "sunburst",
-                            "scatter", "bubble",
-                            "heatmap",
-                            "boxplot", "histogram", "bellcurve",
-                            "column_range", "area_range",
-                            "waterfall", "pareto", "funnel",
-                            "sankey", "dependency_wheel",
-                            "radar", "polar_column", "wind_rose",
-                            "dumbbell", "lollipop",
-                            "word_cloud",
-                            "error_bar", "combo_line_column"
-                        ]
-                    },
-                    "title": {
-                        "type": "string",
-                        "description": "A concise, specific chart title naming the metric and dimensions shown (e.g., 'Daily Spend by Resource'). Never use generic titles like 'Chart' or 'Data'."
-                    },
-                    "description": {
-                        "type": "string",
-                        "description": "One or two sentences explaining what this chart reveals in the context of the user's question. Describe the insight or comparison the viewer should take away."
-                    },
-                    "report_id": {"type": "integer", "minimum": 1, "maximum": 6},
-                    "x_field": {"type": "string"},
-                    "y_field": {"type": "string"},
-                    "series_field": {"type": ["string", "null"]},
-                    "value_field": {"type": "string"},
-                    "aggregation": {
-                        "type": "string",
-                        "enum": ["sum", "avg", "min", "max", "count", "none"]
-                    }
-                },
-                "required": ["chart_type", "title", "description", "report_id", "value_field"]
-            }
+            "items": CHART_ITEM_SCHEMA
         },
         "filters": {
             "type": "array",

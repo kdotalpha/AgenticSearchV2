@@ -1,0 +1,52 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>probe</title></head><body>
+<pre id="out">PENDING</pre>
+<iframe id="f" src="/" style="width:1300px;height:900px;border:1px solid #ccc"></iframe>
+<script>
+const L = [];
+function done() { document.getElementById('out').textContent = L.join('\n'); }
+
+const f = document.getElementById('f');
+f.addEventListener('load', function () {
+  const w = f.contentWindow, d = f.contentDocument;
+  try {
+    L.push('Highcharts in app page: ' + (w.Highcharts ? w.Highcharts.version : 'MISSING'));
+    if (!w.Highcharts) { done(); return; }
+    L.push('heatmap registered: ' + !!w.Highcharts.seriesTypes.heatmap);
+    const po = w.Highcharts.getOptions().plotOptions;
+    const globalMarker = po.series && po.series.marker ? String(po.series.marker.enabled) : 'UNSET';
+    L.push('global series.marker.enabled: ' + globalMarker + (globalMarker === 'UNSET' ? '  (FIX PRESENT)' : '  (OLD THEME - would blank heatmaps)'));
+    L.push('line.marker.enabled: ' + (po.line && po.line.marker ? po.line.marker.enabled : 'unset'));
+
+    // Drive the real UI exactly as a user would.
+    const input = d.getElementById('query-input');
+    input.value = 'show me a heatmap of spend';
+    input.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    let waited = 0;
+    const iv = setInterval(function () {
+      waited += 500;
+      const charts = w.Highcharts.charts.filter(Boolean);
+      const hm = charts.find(function (c) { return c && c.options && c.options.chart && c.options.chart.type === 'heatmap'; });
+      if (hm) {
+        clearInterval(iv);
+        const s = hm.series[0];
+        let drawn = 0;
+        s.points.forEach(function (p) { if (p.graphic) drawn++; });
+        L.push('HEATMAP RENDERED: points=' + s.points.length + ' drawn=' + drawn);
+        L.push('sample cell fill: ' + (s.points[0] && s.points[0].graphic ? s.points[0].graphic.attr('fill') : 'NO GRAPHIC'));
+        L.push('cells in DOM: ' + hm.container.querySelectorAll('.highcharts-point').length);
+        done();
+      } else if (waited > 90000) {
+        clearInterval(iv);
+        L.push('TIMEOUT: no heatmap chart after 90s. charts on page=' + charts.length);
+        charts.forEach(function (c) { L.push('  chart type: ' + (c.options.chart || {}).type); });
+        done();
+      }
+    }, 500);
+  } catch (e) {
+    L.push('PROBE ERROR: ' + e.message);
+    done();
+  }
+});
+</script></body></html>

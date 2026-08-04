@@ -4,33 +4,40 @@ import logging
 import os
 
 from config import PROJECT_ROOT
-from prompts import build_system_prompt
-from schemas import INTERPRETATION_SCHEMA
+from prompts import build_chart_selection_prompt, build_system_prompt
+from schemas import CHART_SELECTION_SCHEMA, INTERPRETATION_SCHEMA
 
 logger = logging.getLogger(__name__)
 
 INTERPRET_TIMEOUT_S = 120
 
 
-async def interpret_query(user_query: str) -> dict:
-    # Lazy import so module import (and anything that only touches other
-    # symbols here) never requires the SDK to be installed.
-    from claude_agent_sdk import ClaudeAgentOptions, query
+def _options(system_prompt: str, schema: dict):
+    """Hermetic, tool-free SDK options for a single NL->JSON pass."""
+    from claude_agent_sdk import ClaudeAgentOptions
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    options = ClaudeAgentOptions(
+    return ClaudeAgentOptions(
         tools=[],  # no built-ins: pure NL->JSON interpretation
         setting_sources=[],  # hermetic: no CLAUDE.md/skills/hooks leak in
         permission_mode="dontAsk",
-        system_prompt=build_system_prompt(),
+        system_prompt=system_prompt,
         model="sonnet",
         max_turns=10,  # headroom for structured-output retries
         max_budget_usd=None,  # no cost ceiling: never abort mid-interpretation
-        output_format={"type": "json_schema", "schema": INTERPRETATION_SCHEMA},
+        output_format={"type": "json_schema", "schema": schema},
         cwd=str(PROJECT_ROOT),
         env={"ANTHROPIC_API_KEY": api_key} if api_key else {},
         stderr=lambda line: logger.debug("[claude-cli] %s", line),
     )
+
+
+async def interpret_query(user_query: str) -> dict:
+    # Lazy import so module import (and anything that only touches other
+    # symbols here) never requires the SDK to be installed.
+    from claude_agent_sdk import query
+
+    options = _options(build_system_prompt(), INTERPRETATION_SCHEMA)
 
     prompt = f"User query: {user_query}"
     try:
@@ -38,6 +45,32 @@ async def interpret_query(user_query: str) -> dict:
     except asyncio.TimeoutError:
         raise RuntimeError(f"Claude interpretation timed out after {INTERPRET_TIMEOUT_S}s")
     return _extract(out)
+
+
+async def select_charts(user_query: str, profile: str) -> list:
+    """Re-pick charts now that the real data shape is known.
+
+    Raises on failure like interpret_query does; the caller is responsible for falling back
+    to the first pass's charts so a bad second pass can never fail the request.
+    """
+    from claude_agent_sdk import query
+
+    options = _options(build_chart_selection_prompt(), CHART_SELECTION_SCHEMA)
+
+    prompt = (
+        f"User query: {user_query}\n\n"
+        f"## Profile of the fetched data\n\n{profile}\n\n"
+        "Choose the charts to render for this question and this data."
+    )
+    try:
+        out = await asyncio.wait_for(_consume(query, prompt, options), INTERPRET_TIMEOUT_S)
+    except asyncio.TimeoutError:
+        raise RuntimeError(f"Chart selection timed out after {INTERPRET_TIMEOUT_S}s")
+
+    charts = _extract(out).get("charts")
+    if not isinstance(charts, list) or not charts:
+        raise RuntimeError("Chart selection returned no charts")
+    return charts
 
 
 async def _consume(query_fn, prompt: str, options) -> dict:

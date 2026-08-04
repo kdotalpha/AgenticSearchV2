@@ -291,6 +291,15 @@
 
 <script>
 /* ===== Pay-i Highcharts theme ===== */
+/* Dots hidden along a line, but hover still lands. Applied per series type below, never
+   globally: for heatmap, scatter and bubble the point marker IS the mark, so setting this
+   on plotOptions.series renders those charts completely blank with no console error. */
+const HIDDEN_MARKER = {
+  enabled: false,
+  lineWidth: 0,
+  states: { hover: { enabled: true, radius: 4, lineWidth: 2, lineColor: '#fff' } }
+};
+
 Highcharts.setOptions({
   colors: ['#33B2A3', '#75E5BD', '#4790AF', '#447691', '#6A4F79', '#EFCA70', '#FF9966', '#FA5C5C'],
   chart: {
@@ -336,15 +345,15 @@ Highcharts.setOptions({
     padding: 10
   },
   plotOptions: {
-    series: {
-      animation: { duration: 700 },
-      marker: { enabled: false, lineWidth: 0, states: { hover: { enabled: true, radius: 4, lineWidth: 2, lineColor: '#fff' } } }
-    },
+    series: { animation: { duration: 700 } },
     column: { borderWidth: 0, borderRadius: 3, pointPadding: 0.08, groupPadding: 0.1 },
     bar: { borderWidth: 0, borderRadius: 4 },
-    line: { lineWidth: 2.5 },
-    spline: { lineWidth: 2.5 },
-    areaspline: { fillOpacity: 0.2, lineWidth: 2.5 }
+    line: { lineWidth: 2.5, marker: HIDDEN_MARKER },
+    spline: { lineWidth: 2.5, marker: HIDDEN_MARKER },
+    area: { marker: HIDDEN_MARKER },
+    areaspline: { fillOpacity: 0.2, lineWidth: 2.5, marker: HIDDEN_MARKER },
+    arearange: { marker: HIDDEN_MARKER },
+    streamgraph: { marker: HIDDEN_MARKER }
   }
 });
 
